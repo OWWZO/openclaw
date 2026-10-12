@@ -113,7 +113,7 @@ export const toNormalizedUsage = (usage: UsageAccumulator): NormalizedUsage | un
     usage.reasoningTokens > 0 ||
     usage.total > 0;
   const cost = usage.cost === "unavailable" ? undefined : usage.cost;
-  if (!hasUsage && !cost) {
+  if (!usage.usageReport && !hasUsage && !cost) {
     return undefined;
   }
   const derivedTotal = usage.input + usage.output + usage.cacheRead + usage.cacheWrite;

@@ -121,11 +121,13 @@ export function hasNonzeroUsage(usage?: NormalizedUsage | null): usage is Normal
   );
 }
 
-/** Aggregate billing may be known even when token/context counters are unavailable. */
+/** Complete accounting includes measured zero; billing may exist without token counts. */
 export function hasBillableUsage(usage?: NormalizedUsage | null): usage is NormalizedUsage {
   return (
     usage?.usageReport?.state !== "unavailable" &&
-    (usage?.cost !== undefined || hasNonzeroUsage(usage))
+    (usage?.usageReport?.state === "available" ||
+      usage?.cost !== undefined ||
+      hasNonzeroUsage(usage))
   );
 }
 

@@ -310,6 +310,27 @@ describe("session actor usage accounting", () => {
       },
     },
     {
+      name: "persists complete zero accounting without a price over a previous snapshot",
+      seed: {
+        inputTokens: 100,
+        outputTokens: 20,
+        cacheRead: 5,
+        cacheWrite: 2,
+        estimatedCostUsd: 0.5,
+      },
+      update: {
+        usage: { input: 0, output: 0, total: 0, usageReport: { state: "available" } },
+      },
+      expected: {
+        usageReport: { state: "available" },
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheRead: 0,
+        cacheWrite: 0,
+      },
+      absent: ["estimatedCostUsd"],
+    },
+    {
       name: "persists totalTokens from promptTokens when usage is unavailable",
       seed: { inputTokens: 1_234, outputTokens: 456 },
       update: { usage: undefined, promptTokens: 39_000 },
