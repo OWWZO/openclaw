@@ -81,6 +81,7 @@ import {
 } from "./session-utils-display.js";
 import {
   buildSessionListRowMetadataContext,
+  projectSessionRowChildLinks,
   resolveTranscriptUsageFallbacks,
 } from "./session-utils-projection.js";
 import { parseGroupKey } from "./session-utils-store.js";
@@ -421,26 +422,6 @@ function projectSessionRowProfiles(
 
 export function refreshSessionRowProfiles(materialized: ReturnType<typeof materializeSessionRow>) {
   Object.assign(materialized.row, projectSessionRowProfiles(materialized.source));
-}
-
-/** Child presentation needs live ownership and sharing facts, never the child's stored payload. */
-export function projectSessionRowChildLinks(links: readonly SessionChildLink[] | undefined) {
-  return links?.map(({ key, entry }) => ({
-    key,
-    entry: {
-      sessionId: entry.sessionId,
-      updatedAt: entry.updatedAt,
-      archivedAt: entry.archivedAt,
-      status: entry.status,
-      startedAt: entry.startedAt,
-      endedAt: entry.endedAt,
-      spawnedBy: entry.spawnedBy,
-      parentSessionKey: entry.parentSessionKey,
-      createdActor: entry.createdActor,
-      visibility: entry.visibility,
-      incognito: entry.incognito,
-    },
-  }));
 }
 
 export function materializeSessionRow(input: ReturnType<typeof readSessionRowInputs>["inputs"]) {
