@@ -8,6 +8,7 @@ import { clearFollowupDrainCallback } from "../../auto-reply/reply/queue/drain.j
 import { enqueueFollowupRun, getFollowupQueueDepth } from "../../auto-reply/reply/queue/enqueue.js";
 import { clearFollowupQueue } from "../../auto-reply/reply/queue/state.js";
 import type { FollowupRun } from "../../auto-reply/reply/queue/types.js";
+import { waitForSessionTranscriptIndexReconcile } from "../../config/sessions/session-transcript-reconcile.js";
 import {
   clearCommandLane,
   CommandLaneClearedError,
@@ -173,6 +174,7 @@ beforeEach(async () => {
       await appendTranscriptEvent(scope, event);
     }
   }
+  await waitForSessionTranscriptIndexReconcile({ agentId: "main" });
 });
 
 afterEach(async () => {
