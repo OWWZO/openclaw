@@ -45,7 +45,7 @@ function mockUsageResult(usage: NormalizedUsage, lastCallUsage?: NormalizedUsage
     emitAgentEvent({ runId, stream: "assistant", data: { delta: "Partial answer" } });
     emitAgentEvent({ runId, stream: "lifecycle", data: { phase: "end" } });
     return {
-      payloads: [{ text: "Partial answer" }],
+      payloads: [{ text: "Partial answer", mediaUrl: null }],
       meta: {
         durationMs: 0,
         agentMeta: {
@@ -159,7 +159,7 @@ describe("OpenAI-compatible HTTP usage", () => {
         ?.sessionKey;
       expect(sessionKey).toBeTypeOf("string");
       agentCommandMock.mockResolvedValueOnce({
-        payloads: [{ text: "Continued" }],
+        payloads: [{ text: "Continued", mediaUrl: null }],
         meta: { durationMs: 0 },
       });
       const continued = await post("responses", { previous_response_id: response.id });
