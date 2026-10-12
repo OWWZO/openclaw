@@ -3,8 +3,7 @@ import { expect, it } from "vitest";
 import { createEmptyCostUsageTotals } from "../../../../src/infra/session-cost-usage-totals.js";
 import { mountSolid } from "../../test-helpers/mount-solid.ts";
 import { flush } from "../../test-helpers/solid-settle.ts";
-import { buildAggregatesFromSessions } from "./metrics.ts";
-import { createUsageProps, usageSession } from "./view.test-support.ts";
+import { createUsageProps, projectUsageData, usageSession } from "./view.test-support.ts";
 import { renderUsage } from "./view.tsx";
 
 it("shows unknown totals after interruption while keeping completed session usage inspectable", () => {
@@ -21,21 +20,16 @@ it("shows unknown totals after interruption while keeping completed session usag
   };
   const completed = usageSession("completed", "completed", "ollama", completeTotals);
   const sessions = [interrupted, completed];
-  const aggregates = buildAggregatesFromSessions(sessions);
   const container = document.createElement("div");
   const [selection, setSelection] = createSignal<string[]>([]);
-  const props = createUsageProps({
-    data: {
-      ...base.data,
-      sessions,
-      aggregates,
-      totals: { ...completeTotals, usageReport: { state: "unavailable" } },
-    },
-  });
+  const props = createUsageProps();
   mountSolid(
     () =>
       renderUsage({
         ...props,
+        get data() {
+          return { ...base.data, ...projectUsageData(sessions, { selectedSessions: selection() }) };
+        },
         get filters() {
           return { ...base.filters, selectedSessions: selection() };
         },
@@ -57,6 +51,8 @@ it("shows unknown totals after interruption while keeping completed session usag
   expect(container.querySelector('[title="completed"] .session-bar-value')?.textContent).toBe(
     "2.6K",
   );
+
+  expect(container.querySelector(".sessions-card-stats")?.textContent).toContain("unknown");
 
   setSelection(["completed"]);
   flush();
