@@ -1,100 +1,64 @@
-import { css, html, nothing, svg, type TemplateResult } from "lit";
-import "./web-awesome-tabs.ts";
+import { css, html, nothing, render as renderLit, type TemplateResult } from "lit";
+import { Directive, directive, type Part } from "lit/directive.js";
+import type {
+  LegacyPanelTabStripParams,
+  PanelTabStripParams as BasePanelTabStripParams,
+  PanelTabStripTab as BasePanelTabStripTab,
+} from "./panel-tab-strip-types.ts";
+import "./panel-tab-strip-lit.tsx";
 
-export type PanelTabStripTab = {
-  id: string;
-  domId: string;
-  label: string;
-  title?: string | null;
-  icon?: TemplateResult | typeof nothing | null;
-  statusLabel?: string | null;
-  /** Short ownership marker (e.g. "agent") rendered as a pill after the label. */
-  badge?: string | null;
-  className?: string;
-  closeLabel: string;
-};
+export type PanelTabStripTab = BasePanelTabStripTab<TemplateResult | typeof nothing>;
+export type PanelTabStripParams<T extends PanelTabStripTab = PanelTabStripTab> =
+  BasePanelTabStripParams<T, TemplateResult | Node | typeof nothing>;
 
-const CLOSE_GLYPH = svg`<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>`;
-const PLUS_GLYPH = svg`<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 3v10M3 8h10" /></svg>`;
+type LegacyInputs = Omit<LegacyPanelTabStripParams, "renderContent">;
 
-export function renderPanelTabStrip(params: {
-  tabs: PanelTabStripTab[];
-  activeId: string | null;
-  ariaControls: string;
-  onSelect: (id: string) => void;
-  onClose: (id: string) => void;
-  onNew: () => void;
-  newLabel: string;
-  newDisabled?: boolean;
-}) {
-  const newButton = (slotted: boolean) => html`
-    <button
-      slot=${slotted ? "nav" : nothing}
-      class="tabstrip-new"
-      type="button"
-      ?disabled=${params.newDisabled}
-      title=${params.newLabel}
-      aria-label=${params.newLabel}
-      @click=${params.onNew}
-    >
-      ${PLUS_GLYPH}
-    </button>
-  `;
-  if (params.tabs.length === 0) {
-    // Web Awesome 3.10 dereferences its first tab when an empty group becomes
-    // visible. Keep the new-session control outside the group until one exists.
-    return newButton(false);
+/** Preserve the originating Lit event/ref receiver inside the owned leaf roots. */
+class RenderHostParamsDirective extends Directive {
+  render(params: LegacyInputs) {
+    return params;
   }
-  return html`
-    <wa-tab-group
-      class="tabstrip"
-      .active=${params.activeId ?? ""}
-      activation="auto"
-      without-scroll-controls
-      @wa-tab-show=${(event: CustomEvent<{ name: string }>) => params.onSelect(event.detail.name)}
-    >
-      ${params.tabs.map(
-        (tab) => html`
-          <wa-tab
-            id=${tab.domId}
-            class=${`tabstrip-tab ${tab.className ?? ""}`}
-            panel=${tab.id}
-            aria-controls=${params.ariaControls}
-            title=${tab.title || nothing}
-            @auxclick=${(event: MouseEvent) => {
-              if (event.button === 1) {
-                event.preventDefault();
-                params.onClose(tab.id);
-              }
-            }}
-          >
-            ${tab.icon == null || tab.icon === nothing
-              ? nothing
-              : html`<span class="tabstrip-tab__icon" aria-hidden="true">${tab.icon}</span>`}
-            <span class="tabstrip-tab__label">${tab.label}</span>
-            ${tab.badge ? html`<span class="tabstrip-tab__badge">${tab.badge}</span>` : nothing}
-            ${tab.statusLabel
-              ? html`<span class="tabstrip-tab__status">${tab.statusLabel}</span>`
-              : nothing}
-          </wa-tab>
-          <button
-            slot="nav"
-            class="tabstrip-tab__close"
-            type="button"
-            title=${tab.closeLabel}
-            aria-label=${tab.closeLabel}
-            @click=${() => params.onClose(tab.id)}
-          >
-            <span class="tabstrip-tab__close-box">${CLOSE_GLYPH}</span>
-          </button>
-        `,
-      )}
-      ${newButton(true)}
-    </wa-tab-group>
-  `;
+
+  override update(part: Part, [params]: [LegacyInputs]): LegacyPanelTabStripParams {
+    const host = part.options?.host;
+    return {
+      ...params,
+      renderContent: (value: unknown, container: HTMLElement) => {
+        renderLit(value ?? nothing, container, { host });
+      },
+    };
+  }
+}
+
+const withRenderHost = directive(RenderHostParamsDirective);
+
+/** Transitional adapter for the remaining Lit headers; the tab UI has one owner. */
+export function renderPanelTabStrip<T extends PanelTabStripTab>(params: PanelTabStripParams<T>) {
+  const bridgeParams: LegacyInputs = {
+    ...params,
+    tabs: params.tabs.map((tab) => ({
+      ...tab,
+      icon: tab.icon == null || tab.icon === nothing ? undefined : tab.icon,
+      controls:
+        typeof params.ariaControls === "string" ? params.ariaControls : params.ariaControls(tab),
+    })),
+    newControl: params.newControl === nothing ? null : params.newControl,
+  };
+  return html`<openclaw-panel-tab-strip
+    style="display: contents"
+    .params=${withRenderHost(bridgeParams)}
+  ></openclaw-panel-tab-strip>`;
 }
 
 export const panelTabStripStyles = css`
+  :where(.tp-header, .bp-header) {
+    --rail-header-height: 46px;
+    --rail-header-padding-start: 8px;
+  }
+  :where(.tp-actions, .bp-actions) {
+    padding-left: 8px;
+    border-left: 1px solid var(--border, #262b34);
+  }
   .tabstrip {
     --track-width: 0;
     display: block;
@@ -106,7 +70,7 @@ export const panelTabStripStyles = css`
   }
   .tabstrip::part(nav) {
     display: flex;
-    align-items: stretch;
+    align-items: center;
   }
   .tabstrip::part(body) {
     display: none;
@@ -118,15 +82,17 @@ export const panelTabStripStyles = css`
     display: flex;
     align-items: center;
     gap: 7px;
-    padding: 0 4px 0 10px;
-    height: 36px;
+    height: 30px;
+    padding: 0 34px 0 10px;
+    border: 0;
+    border-radius: 7px;
     color: var(--muted, #8a919e);
     white-space: nowrap;
     font-size: 12.5px;
-    border-bottom: 2px solid transparent;
     transition:
       color 0.12s ease,
-      background 0.12s ease;
+      background 0.12s ease,
+      box-shadow 0.12s ease;
   }
   .tabstrip-tab:hover::part(base) {
     color: var(--text, #d7dae0);
@@ -134,9 +100,10 @@ export const panelTabStripStyles = css`
   }
   .tabstrip-tab[active]::part(base) {
     color: var(--text, #d7dae0);
-    border-bottom-color: var(--accent, #ff5c5c);
+    background: var(--bg-hover, #1f2330);
+    box-shadow: inset 0 0 0 1px var(--border-strong, #2e3040);
   }
-  .tabstrip-tab.is-exited::part(base) {
+  .tabstrip-tab.is-exited:not([active])::part(base) {
     opacity: 0.55;
   }
   .tabstrip-tab.is-connecting .tabstrip-tab__icon {
@@ -146,6 +113,12 @@ export const panelTabStripStyles = css`
     display: inline-flex;
     color: var(--accent, #ff5c5c);
   }
+  .tabstrip-tab__favicon {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    object-fit: contain;
+  }
   .tabstrip-tab.is-exited .tabstrip-tab__icon {
     color: var(--muted, #8a919e);
   }
@@ -154,6 +127,13 @@ export const panelTabStripStyles = css`
     overflow: hidden;
     text-overflow: ellipsis;
     font-variant-numeric: tabular-nums;
+  }
+  .tabstrip-tab__tooltip-trigger {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: inherit;
+    flex: 1 1 auto;
   }
   .tabstrip-tab__status {
     font-size: 11px;
@@ -168,27 +148,16 @@ export const panelTabStripStyles = css`
     padding: 0 5px;
     text-transform: uppercase;
   }
-  /* Each close button sits right after its tab in the nav slot; the pair is
-     styled as one surface (shared hover background, shared active underline)
-     while the X keeps its own inner highlight. */
+  /* Keep the close action inside the tab surface without nesting it in wa-tab;
+     wa-tab-group still owns the direct tab children for keyboard navigation. */
   .tabstrip-tab__close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    align-self: stretch;
     flex: 0 0 auto;
-    width: 24px;
-    margin-right: 1px;
-    padding: 0 4px 0 0;
+    align-self: center;
+    z-index: 1;
+    margin-left: -32px;
+    margin-right: 4px;
     opacity: 0;
-    border: none;
-    border-bottom: 2px solid transparent;
-    background: transparent;
-    color: var(--muted, #8a919e);
-    transition:
-      color 0.12s ease,
-      background 0.12s ease,
-      opacity 0.12s ease;
+    transition: opacity 0.12s ease;
   }
   .tabstrip-tab__close-box {
     display: inline-flex;
@@ -203,45 +172,19 @@ export const panelTabStripStyles = css`
   .tabstrip-tab__close:focus-visible {
     opacity: 1;
   }
-  .tabstrip-tab:hover + .tabstrip-tab__close,
-  .tabstrip-tab__close:hover,
-  .tabstrip-tab__close:focus-visible {
-    background: color-mix(in srgb, var(--text, #d7dae0) 6%, transparent);
-  }
-  /* Back-propagate hover from the X to its tab so the pair lights up together. */
-  .tabstrip-tab:has(+ .tabstrip-tab__close:hover)::part(base),
-  .tabstrip-tab:has(+ .tabstrip-tab__close:focus-visible)::part(base) {
-    color: var(--text, #d7dae0);
-    background: color-mix(in srgb, var(--text, #d7dae0) 6%, transparent);
-  }
-  .tabstrip-tab[active] + .tabstrip-tab__close {
-    border-bottom-color: var(--accent, #ff5c5c);
-  }
-  .tabstrip-tab__close:hover,
-  .tabstrip-tab__close:focus-visible {
-    color: var(--text, #d7dae0);
-  }
-  .tabstrip-tab__close:hover .tabstrip-tab__close-box,
-  .tabstrip-tab__close:focus-visible .tabstrip-tab__close-box {
-    background: color-mix(in srgb, var(--text, #d7dae0) 14%, transparent);
-  }
   .tabstrip-new {
+    flex: none;
+    align-self: center;
+    margin-left: 2px;
+  }
+  .tabstrip-new-control {
     display: inline-flex;
     flex: none;
-    align-items: center;
-    justify-content: center;
     align-self: center;
-    width: 26px;
-    height: 26px;
-    border: none;
-    background: transparent;
-    color: var(--muted, #8a919e);
-    border-radius: 6px;
-    padding: 0;
   }
-  .tabstrip-new:hover {
-    background: color-mix(in srgb, var(--text, #d7dae0) 12%, transparent);
-    color: var(--text, #d7dae0);
+  .tabstrip-separator {
+    flex: 0 0 auto;
+    align-self: center;
   }
   @keyframes tabstrip-pulse {
     50% {

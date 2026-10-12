@@ -4,9 +4,13 @@ import { routePageSpec } from "../../app-route-paths.ts";
 
 export const page = definePage({
   ...routePageSpec("cron"),
+  loaderDeps: (_context, { search }) => search,
+  loader: (_context, { deps }) => deps,
   component: () =>
-    import("./cron-page.ts").then(() => ({
+    import("./cron-page.tsx").then(() => ({
       header: true,
-      render: () => html`<openclaw-cron-page></openclaw-cron-page>`,
+      render: (search: unknown) => html`<openclaw-cron-page
+        .routeSearch=${typeof search === "string" ? search : ""}
+      ></openclaw-cron-page>`,
     })),
 });
