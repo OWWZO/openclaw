@@ -32,8 +32,8 @@ it("keeps incomplete table totals unknown beyond the page and scopes completenes
   const complete = { ...createEmptyCostUsageTotals(), totalTokens: 40, totalCost: 1 };
   const interrupted = {
     ...createEmptyCostUsageTotals(),
-    totalTokens: 20,
-    totalCost: 2,
+    totalTokens: 40,
+    totalCost: 1,
     usageReport: { state: "unavailable" as const },
     activityDates: ["2026-05-14", "2026-05-15"],
     dailyBreakdown: [
@@ -59,8 +59,8 @@ it("keeps incomplete table totals unknown beyond the page and scopes completenes
   expect(all.sessions.map((row) => row.key)).toEqual(["complete"]);
   expect(all.totals.usageReport).toEqual({ state: "unavailable" });
   expect(all.overview.tableTotals).toEqual({
-    tokens: 60,
-    cost: 3,
+    tokens: 80,
+    cost: 2,
     errors: 0,
     usageReport: { state: "unavailable" },
   });
@@ -69,6 +69,7 @@ it("keeps incomplete table totals unknown beyond the page and scopes completenes
     options: { selectedDays: ["2026-05-14"] },
     dayBucket: { mode: "utc-offset", utcOffsetMinutes: 0 },
   });
+  expect(selected.overview.usageReport).toEqual({ state: "unavailable" });
   expect(selected.totals.usageReport).toBeUndefined();
   expect(selected.overview.tableTotals).toEqual({ tokens: 40, cost: 1, errors: 0 });
   expect(selected.sessions[0]?.usage?.usageReport).toBeUndefined();

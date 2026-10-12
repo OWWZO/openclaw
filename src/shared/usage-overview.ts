@@ -445,6 +445,7 @@ export function buildUsageOverview(
       }
     }
   }
+  overview.usageReport = accumulator.totals.usageReport;
   const aggregates = accumulator.finish();
   overview.selectedSessionCount = aggregates.sessionCount ?? 0;
   let totals = accumulator.totals;

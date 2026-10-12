@@ -220,7 +220,9 @@ export function renderUsage(props: UsageProps) {
       exportSessionCount,
       displayTotals,
       // Known subtotals cannot drive complete cumulative charts or comparisons.
-      usageUnavailable: displayTotals?.usageReport?.state === "unavailable",
+      usageUnavailable:
+        displayTotals?.usageReport?.state === "unavailable" ||
+        overview?.usageReport?.state === "unavailable",
       filterOptions,
       filteredDaily,
       filteredSessions,
