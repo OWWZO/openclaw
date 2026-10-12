@@ -29,11 +29,19 @@ it("matches wildcard filters without exponential backtracking", () => {
 });
 
 it("keeps incomplete table totals unknown beyond the page and scopes completeness to selected days", () => {
-  const complete = { ...createEmptyCostUsageTotals(), totalTokens: 40, totalCost: 1 };
-  const interrupted = {
+  const complete = {
     ...createEmptyCostUsageTotals(),
+    input: 40,
+    inputCost: 1,
     totalTokens: 40,
     totalCost: 1,
+  };
+  const interrupted = {
+    ...createEmptyCostUsageTotals(),
+    input: 75,
+    inputCost: 2,
+    totalTokens: 75,
+    totalCost: 2,
     usageReport: { state: "unavailable" as const },
     activityDates: ["2026-05-14", "2026-05-15"],
     dailyBreakdown: [
@@ -59,8 +67,8 @@ it("keeps incomplete table totals unknown beyond the page and scopes completenes
   expect(all.sessions.map((row) => row.key)).toEqual(["complete"]);
   expect(all.totals.usageReport).toEqual({ state: "unavailable" });
   expect(all.overview.tableTotals).toEqual({
-    tokens: 80,
-    cost: 2,
+    tokens: 115,
+    cost: 3,
     errors: 0,
     usageReport: { state: "unavailable" },
   });
@@ -72,6 +80,12 @@ it("keeps incomplete table totals unknown beyond the page and scopes completenes
   expect(selected.overview.usageReport).toEqual({ state: "unavailable" });
   expect(selected.totals.usageReport).toBeUndefined();
   expect(selected.overview.tableTotals).toEqual({ tokens: 40, cost: 1, errors: 0 });
+  expect(selected.sessions[0]?.usage).toMatchObject({
+    input: 40,
+    inputCost: 1,
+    totalTokens: 40,
+    totalCost: 1,
+  });
   expect(selected.sessions[0]?.usage?.usageReport).toBeUndefined();
 });
 

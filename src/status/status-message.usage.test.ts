@@ -37,7 +37,30 @@ it("shows measured zero from prepared transcript facts when session counters are
       totalTokens: 0,
       totalTokensFresh: true,
     },
-    sessionEntry: { sessionId: "transcript-zero", updatedAt: 0 },
+    sessionEntry: {
+      sessionId: "transcript-zero",
+      updatedAt: 0,
+      contextBudgetStatus: {
+        schemaVersion: 1,
+        source: "pre-prompt-estimate",
+        updatedAt: 1,
+        provider: "ollama",
+        model: "llama3.2",
+        route: "fits",
+        shouldCompact: false,
+        estimatedPromptTokens: 4096,
+        contextTokenBudget: 32768,
+        promptBudgetBeforeReserve: 30000,
+        reserveTokens: 2768,
+        effectiveReserveTokens: 2768,
+        remainingPromptBudgetTokens: 25904,
+        overflowTokens: 0,
+        toolResultReducibleChars: 0,
+        messageCount: 1,
+        unwindowedMessageCount: 1,
+        sessionId: "transcript-zero",
+      },
+    },
   });
   expect(text).toContain("Tokens: 0 in / 0 out");
   expect(text).toContain("Context: 0/");

@@ -1,4 +1,7 @@
-import { asPositiveFiniteNumber } from "@openclaw/normalization-core/number-coercion";
+import {
+  asNonNegativeFiniteNumber,
+  asPositiveFiniteNumber,
+} from "@openclaw/normalization-core/number-coercion";
 import { resolveCurrentSessionAgentRuntimeMetadata } from "../agents/agent-runtime-metadata.js";
 import { findModelCatalogEntry } from "../agents/model-catalog-lookup.js";
 import { selectModelCatalogRuntimeEntry } from "../agents/model-catalog-view.js";
@@ -186,7 +189,10 @@ export function resolveTranscriptUsageFallbacks(params: {
       });
       fallbacks.set(fallbackModelRef, {
         usageReport: snapshot.usageReport,
-        totalTokens: asPositiveFiniteNumber(snapshot.totalTokens),
+        totalTokens:
+          snapshot.usageReport?.state === "available"
+            ? asNonNegativeFiniteNumber(snapshot.totalTokens)
+            : asPositiveFiniteNumber(snapshot.totalTokens),
         totalTokensFresh: snapshot.totalTokensFresh === true,
         estimatedCostUsd,
       });

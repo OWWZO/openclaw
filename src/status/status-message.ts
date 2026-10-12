@@ -707,7 +707,7 @@ export function buildStatusMessageParts(args: StatusArgs) {
       })
     : entry?.contextBudgetStatus;
   const contextUsageLabel =
-    totalTokens == null || (totalTokens === 0 && entry?.usageReport?.state !== "available")
+    totalTokens == null || (totalTokens === 0 && usageReport?.state !== "available")
       ? (formatEstimatedContextBudgetTokens(contextBudgetStatus, contextTokens) ??
         formatTokens(totalTokens, contextTokens ?? null))
       : formatTokens(totalTokens, contextTokens ?? null);
