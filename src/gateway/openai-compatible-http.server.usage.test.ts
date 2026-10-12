@@ -83,6 +83,20 @@ const unavailableUsage = {
 const earlierUsage = { input: 11, output: 7, total: 18 };
 
 describe("OpenAI-compatible HTTP usage", () => {
+  it("omits usage when a Responses stream fails before producing a result", async () => {
+    agentCommandMock.mockClear();
+    agentCommandMock.mockRejectedValueOnce(new Error("Synthetic run failure"));
+    const res = await post("responses", { stream: true });
+    expect(res.status).toBe(200);
+    const events = parseSseEvents(await res.text());
+    const { response } = parseSseData(findSseEvent(events, "response.failed")) as {
+      response: ResponseResource;
+    };
+    expect(response.status).toBe("failed");
+    expect(response).not.toHaveProperty("usage");
+    expect(events.filter((event) => event.data === "[DONE]")).toHaveLength(1);
+  });
+
   it.each([false, true])(
     "omits unavailable Chat usage without losing the response (stream=%s)",
     async (stream) => {
