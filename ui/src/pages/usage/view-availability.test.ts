@@ -24,19 +24,22 @@ it("shows unknown totals after interruption while keeping completed session usag
   const aggregates = buildAggregatesFromSessions(sessions);
   const container = document.createElement("div");
   const [selection, setSelection] = createSignal<string[]>([]);
+  const props = createUsageProps({
+    data: {
+      ...base.data,
+      sessions,
+      aggregates,
+      totals: { ...completeTotals, usageReport: { state: "unavailable" } },
+    },
+  });
   mountSolid(
     () =>
-      renderUsage(
-        createUsageProps({
-          data: {
-            ...base.data,
-            sessions,
-            aggregates,
-            totals: { ...completeTotals, usageReport: { state: "unavailable" } },
-          },
-          filters: { ...base.filters, selectedSessions: selection() },
-        }),
-      ),
+      renderUsage({
+        ...props,
+        get filters() {
+          return { ...base.filters, selectedSessions: selection() };
+        },
+      }),
     { container },
   );
   flush();

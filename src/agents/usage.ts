@@ -123,7 +123,10 @@ export function hasNonzeroUsage(usage?: NormalizedUsage | null): usage is Normal
 
 /** Aggregate billing may be known even when token/context counters are unavailable. */
 export function hasBillableUsage(usage?: NormalizedUsage | null): usage is NormalizedUsage {
-  return usage?.cost !== undefined || hasNonzeroUsage(usage);
+  return (
+    usage?.usageReport?.state !== "unavailable" &&
+    (usage?.cost !== undefined || hasNonzeroUsage(usage))
+  );
 }
 
 /** Adapter-default zeros are not price evidence; billed totals and cost components are. */
@@ -328,6 +331,9 @@ export function toDiagnosticUsage(usage: NormalizedUsage) {
  * https://platform.openai.com/docs/guides/prompt-caching
  */
 export function toOpenAiChatCompletionsUsage(usage: NormalizedUsage | undefined) {
+  if (usage?.usageReport?.state === "unavailable") {
+    return undefined;
+  }
   const input = usage?.input ?? 0;
   const output = usage?.output ?? 0;
   const cacheRead = usage?.cacheRead ?? 0;
@@ -356,6 +362,9 @@ export function toOpenAiChatCompletionsUsage(usage: NormalizedUsage | undefined)
  * Reasoning tokens remain a detail of `output_tokens`, not an extra bucket.
  */
 export function toOpenAiResponsesUsage(usage: NormalizedUsage | undefined) {
+  if (usage?.usageReport?.state === "unavailable") {
+    return undefined;
+  }
   const input = Math.max(0, usage?.input ?? 0);
   const output = Math.max(0, usage?.output ?? 0);
   const cacheRead = Math.max(0, usage?.cacheRead ?? 0);
@@ -413,7 +422,10 @@ export function deriveContextPromptTokens(params: {
   }
 
   for (const [index, usage] of [params.lastCallUsage, params.usage].entries()) {
-    if (usage?.contextUsage?.state === "unavailable") {
+    if (
+      usage?.usageReport?.state === "unavailable" ||
+      usage?.contextUsage?.state === "unavailable"
+    ) {
       return undefined;
     }
     if (usage?.contextUsage?.state === "available") {
@@ -437,5 +449,9 @@ export function deriveSessionTotalTokens(params: {
 }): number | undefined {
   // SessionEntry.totalTokens is an unclamped prompt/context snapshot, excluding
   // completion tokens. Display layers own percentage caps.
-  return asPositiveFiniteNumber(deriveContextPromptTokens(params));
+  const tokens = deriveContextPromptTokens(params);
+  const currentUsage = params.lastCallUsage ?? params.usage;
+  return currentUsage?.usageReport?.state === "available"
+    ? asNonNegativeFiniteNumber(tokens)
+    : asPositiveFiniteNumber(tokens);
 }

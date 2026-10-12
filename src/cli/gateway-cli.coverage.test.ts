@@ -280,7 +280,9 @@ describe("gateway-cli coverage", () => {
         timeoutMs: 10_000,
       });
       const output = runtimeLogs.join("\n");
-      const figures = unavailable ? "unavailable · unavailable tokens" : "$0.10 · 100 tokens";
+      const figures = unavailable
+        ? "unavailable (known subtotal: $0.10 · 100 tokens)"
+        : "$0.10 · 100 tokens";
       expect(output).toContain(`Total: ${figures}`);
       expect(output).toContain(`Latest day: 2026-09-01 · ${figures}`);
       expect(output).toContain(

@@ -20,8 +20,9 @@ export function recordAgentRunOutputTokens(
 ): AgentRunUsage | undefined {
   const outputTokens = Math.floor(params.outputTokens);
   if (
-    (!Number.isFinite(outputTokens) || outputTokens <= 0) &&
-    params.usageReport?.state !== "unavailable"
+    !Number.isFinite(outputTokens) ||
+    outputTokens < 0 ||
+    (outputTokens === 0 && !params.usageReport)
   ) {
     return undefined;
   }

@@ -129,10 +129,7 @@ export function createEmbeddedModelState(
       return;
     }
     mergeUsageIntoAccumulator(totals, usage);
-    if (
-      (usage.usageReport?.state !== "unavailable" && !hasNonzeroUsage(usage)) ||
-      !params.lifecycleGeneration
-    ) {
+    if ((!usage.usageReport && !hasNonzeroUsage(usage)) || !params.lifecycleGeneration) {
       return;
     }
     const data = emitAgentRunOutputTokens({
@@ -207,7 +204,7 @@ export function createEmbeddedModelState(
         case "message_end":
           recordPendingUsage(message.usage);
           preserveAssistantUsage(message, pending);
-          if (hasObservedModelUsage(pending)) {
+          if (pending?.usageReport || hasNonzeroUsage(pending)) {
             lastUsage = { ...pending };
           }
           recordModelUsage(pending);

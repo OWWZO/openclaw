@@ -579,17 +579,19 @@ export function buildStatusMessageParts(args: StatusArgs) {
           contextLookupModel = logUsage.model;
         }
       }
-      if (!inputTokens) {
-        inputTokens = logUsage.input;
-      }
-      if (!outputTokens) {
-        outputTokens = logUsage.output;
-      }
-      if (typeof cacheRead !== "number" || cacheRead <= 0) {
-        cacheRead = logUsage.cacheRead ?? cacheRead;
-      }
-      if (typeof cacheWrite !== "number" || cacheWrite <= 0) {
-        cacheWrite = logUsage.cacheWrite ?? cacheWrite;
+      if (entry?.usageReport?.state !== "available") {
+        if (!inputTokens) {
+          inputTokens = logUsage.input;
+        }
+        if (!outputTokens) {
+          outputTokens = logUsage.output;
+        }
+        if (typeof cacheRead !== "number" || cacheRead <= 0) {
+          cacheRead = logUsage.cacheRead ?? cacheRead;
+        }
+        if (typeof cacheWrite !== "number" || cacheWrite <= 0) {
+          cacheWrite = logUsage.cacheWrite ?? cacheWrite;
+        }
       }
     }
   }
@@ -741,7 +743,7 @@ export function buildStatusMessageParts(args: StatusArgs) {
       })
     : entry?.contextBudgetStatus;
   const contextUsageLabel =
-    totalTokens == null || totalTokens === 0
+    totalTokens == null || (totalTokens === 0 && entry?.usageReport?.state !== "available")
       ? (formatEstimatedContextBudgetTokens(contextBudgetStatus, contextTokens) ??
         formatTokens(totalTokens, contextTokens ?? null))
       : formatTokens(totalTokens, contextTokens ?? null);

@@ -125,7 +125,7 @@ export const toNormalizedUsage = (usage: UsageAccumulator): NormalizedUsage | un
     cacheWrite: usage.cacheWriteReported ? usage.cacheWrite : usage.cacheWrite || undefined,
     ...(usage.cacheWrite1h > 0 ? { cacheWrite1h: usage.cacheWrite1h } : {}),
     ...(usage.reasoningTokens > 0 ? { reasoningTokens: usage.reasoningTokens } : {}),
-    total: usage.total || derivedTotal || undefined,
+    total: usage.usageReport ? usage.total : usage.total || derivedTotal || undefined,
     ...(cost ? { cost: { ...cost } } : {}),
   };
 };

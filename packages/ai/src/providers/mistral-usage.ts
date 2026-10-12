@@ -2,7 +2,11 @@ import type { CompletionEvent } from "@mistralai/mistralai/models/components";
 import { calculateCost } from "../model-utils.js";
 import type { Model, Usage } from "../types.js";
 
-function readMistralCachedPromptTokens(usage: unknown, promptTokens: number): number {
+function readMistralCachedPromptTokens(
+  usage: NonNullable<CompletionEvent["data"]["usage"]>,
+  promptTokens: number,
+): number {
+  // SAFETY: SDK usage permits extra cache fields; only finite numeric counts are accepted below.
   const record = usage as {
     promptTokensDetails?: { cachedTokens?: unknown } | null;
     prompt_tokens_details?: { cached_tokens?: unknown } | null;

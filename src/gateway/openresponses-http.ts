@@ -542,6 +542,7 @@ export async function handleOpenResponsesHttpRequest(
   let closed = false;
   let unsubscribe = () => {};
   let finalUsage: Usage | undefined;
+  let finalResultReady = false;
   let finalOutputStatus: "completed" | "incomplete" = "completed";
   let finalizeRequested: { status: "completed" | "failed"; errorMessage?: string } | null = null;
   let finalizeScheduled = false;
@@ -554,16 +555,16 @@ export async function handleOpenResponsesHttpRequest(
     if (!finalizeRequested) {
       return;
     }
-    // finalUsage is set only after runAgentCommand settles, which commits response
-    // continuity first; lifecycle events alone must never publish a terminal event.
-    if (!finalUsage) {
+    // Result preparation follows runAgentCommand's continuity commit. Usage may be
+    // unavailable; lifecycle events alone must never publish a terminal event.
+    if (!finalResultReady) {
       return;
     }
     // Lifecycle listeners can queue assistant flushes after this listener runs;
     // the next turn preserves all same-turn deltas before the terminal snapshot.
     finalizeScheduled = true;
     setImmediate(() => {
-      if (closed || !finalizeRequested || !finalUsage) {
+      if (closed || !finalizeRequested || !finalResultReady) {
         return;
       }
       if (unrepresentableAssistantReplacement) {
@@ -684,7 +685,7 @@ export async function handleOpenResponsesHttpRequest(
     if (closed) {
       return;
     }
-    // Failure is terminal even when an earlier lifecycle event is waiting for usage.
+    // Failure is terminal even when an earlier lifecycle event is waiting for the result.
     closed = true;
     unsubscribe();
     writeSseEvent(res, { type: "response.failed", response });
@@ -693,17 +694,13 @@ export async function handleOpenResponsesHttpRequest(
   };
 
   const finalizeUnrepresentableAssistantReplacement = () => {
-    const usage = finalUsage;
-    if (!usage) {
-      return;
-    }
     finalizeFailedResponse(
       createFailedResponse(
         {
           code: "server_error",
           message: "Assistant output cannot be represented as an append-only response stream.",
         },
-        usage,
+        finalUsage,
       ),
     );
   };
@@ -832,6 +829,7 @@ export async function handleOpenResponsesHttpRequest(
       finalOutputStatus = stopReason === "length" ? "incomplete" : "completed";
       finalToolCalls =
         stopReason === "tool_calls" && pendingToolCalls?.length ? pendingToolCalls : undefined;
+      finalResultReady = true;
       maybeFinalize();
     } catch (err) {
       if (closed || abortController.signal.aborted) {
@@ -840,7 +838,6 @@ export async function handleOpenResponsesHttpRequest(
       terminalLifecyclePhase = "error";
       logWarn(`openresponses: streaming response failed: ${String(err)}`);
 
-      finalUsage = finalUsage ?? toOpenAiResponsesUsage(undefined);
       const mapped = resolveOpenAiCompatibleAgentError(err);
       finalizeFailedResponse(
         createFailedResponse(

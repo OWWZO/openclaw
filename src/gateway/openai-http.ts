@@ -487,10 +487,6 @@ function buildAgentPrompt(
   };
 }
 
-function resolveChatCompletionUsage(result: unknown): OpenAiChatCompletionsUsage {
-  return toOpenAiChatCompletionsUsage(resolveAgentRunUsage(result));
-}
-
 export async function handleOpenAiHttpRequest(
   req: IncomingMessage,
   res: ServerResponse,
@@ -712,7 +708,7 @@ export async function handleOpenAiHttpRequest(
       if (runFailed) {
         throw new Error("agent run failed");
       }
-      const usage = resolveChatCompletionUsage(result);
+      const usage = toOpenAiChatCompletionsUsage(resolveAgentRunUsage(result));
 
       const toolChoiceError = resolveToolChoiceConstraintError(
         toolChoice.constraint,
@@ -776,6 +772,7 @@ export async function handleOpenAiHttpRequest(
   let finalFinishReason: "stop" | "length" = "stop";
   let finalToolCalls: ReturnType<typeof readOpenAiHttpRunTerminal>["pendingToolCalls"];
   let finalUsage: OpenAiChatCompletionsUsage | undefined;
+  let finalResultReady = false;
   let finalizeScheduled = false;
   let closed = false;
   let observedTerminalLifecycle = false;
@@ -786,7 +783,8 @@ export async function handleOpenAiHttpRequest(
     if (closed || finalizeScheduled) {
       return;
     }
-    if (!finalUsage) {
+    // A settled result can have unavailable usage; lifecycle alone cannot complete output.
+    if (!finalResultReady) {
       return;
     }
     // Agent text_end flushes run in a microtask. Keep the stream subscribed
@@ -920,7 +918,7 @@ export async function handleOpenAiHttpRequest(
         return;
       }
 
-      finalUsage = resolveChatCompletionUsage(result);
+      finalUsage = toOpenAiChatCompletionsUsage(resolveAgentRunUsage(result));
 
       const toolChoiceError = resolveToolChoiceConstraintError(
         toolChoice.constraint,
@@ -938,6 +936,7 @@ export async function handleOpenAiHttpRequest(
       finalFinishReason = stopReason === "length" ? "length" : "stop";
       finalToolCalls =
         stopReason === "tool_calls" && pendingToolCalls?.length ? pendingToolCalls : undefined;
+      finalResultReady = true;
       requestFinalize();
     } catch (err) {
       if (closed || abortController.signal.aborted) {
