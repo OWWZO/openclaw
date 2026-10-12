@@ -156,7 +156,7 @@ export function resolveTranscriptUsageFallbacks(params: {
   const snapshot = params.transcriptUsage;
   for (const fallbackModelRef of new Set(params.fallbackModelRefs)) {
     fallbacks.set(fallbackModelRef, null);
-    if (!entry?.sessionId) {
+    if (!entry?.sessionId || !snapshot) {
       continue;
     }
     const resolvedModel = resolveSessionModelIdentityRef(
@@ -178,25 +178,23 @@ export function resolveTranscriptUsageFallbacks(params: {
     ) {
       continue;
     }
-    if (snapshot) {
-      const estimatedCostUsd = resolveEstimatedSessionCostUsd({
-        cfg: params.cfg,
-        provider: snapshot.modelProvider ?? resolvedModel.provider,
-        model: snapshot.model ?? resolvedModel.model,
-        explicitCostUsd: snapshot.costUsd,
-        entry: snapshot,
-        rowContext: params.rowContext,
-      });
-      fallbacks.set(fallbackModelRef, {
-        usageReport: snapshot.usageReport,
-        totalTokens:
-          snapshot.usageReport?.state === "available"
-            ? asNonNegativeFiniteNumber(snapshot.totalTokens)
-            : asPositiveFiniteNumber(snapshot.totalTokens),
-        totalTokensFresh: snapshot.totalTokensFresh === true,
-        estimatedCostUsd,
-      });
-    }
+    const estimatedCostUsd = resolveEstimatedSessionCostUsd({
+      cfg: params.cfg,
+      provider: snapshot.modelProvider ?? resolvedModel.provider,
+      model: snapshot.model ?? resolvedModel.model,
+      explicitCostUsd: snapshot.costUsd,
+      entry: snapshot,
+      rowContext: params.rowContext,
+    });
+    fallbacks.set(fallbackModelRef, {
+      usageReport: snapshot.usageReport,
+      totalTokens:
+        snapshot.usageReport?.state === "available"
+          ? asNonNegativeFiniteNumber(snapshot.totalTokens)
+          : asPositiveFiniteNumber(snapshot.totalTokens),
+      totalTokensFresh: snapshot.totalTokensFresh === true,
+      estimatedCostUsd,
+    });
   }
   return fallbacks;
 }
