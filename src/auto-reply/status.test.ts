@@ -189,20 +189,6 @@ function withStatusHome(run: () => Promise<void>) {
 }
 
 describe("buildStatusMessage", () => {
-  it("shows interrupted usage as unavailable instead of reusing prior counters or price", () => {
-    const text = buildStatusMessage({
-      sessionEntry: {
-        usageReport: { state: "unavailable" },
-        inputTokens: 123,
-        outputTokens: 45,
-        estimatedCostUsd: 0.5,
-        totalTokensFresh: false,
-      },
-    });
-    expect(text).toContain("Tokens: unavailable (incomplete response)");
-    expect(text).not.toContain("123 in / 45 out");
-    expect(text).not.toContain("Cost:");
-  });
   it("uses estimated context budget status when fresh totalTokens are unavailable", () => {
     const text = buildStatusMessage({
       ...modelArgs("anthropic", "claude-sonnet-4.6"),

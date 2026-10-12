@@ -189,7 +189,10 @@ describe("session usage reporting pricing", () => {
       expect(summary?.dailyBreakdown?.[0]?.usageReport).toEqual(expectedReport);
       expect(summary?.modelUsage?.[0]?.totals.usageReport).toEqual(expectedReport);
       expect(summary?.dailyModelUsage?.[0]?.usageReport).toEqual(expectedReport);
-      expect(summary?.utcQuarterHourTokenUsage?.[0]?.usageReport).toEqual(expectedReport);
+      expect(
+        summary?.utcQuarterHourTokenUsage?.find((bucket) => bucket.quarterIndex === 48)
+          ?.usageReport,
+      ).toEqual(expectedReport);
       expect(summary?.totalCost).toBeCloseTo(testCase.expectedCost ?? 0, 8);
       expect(summary?.inputCost).toBeCloseTo(testCase.expectedBreakdown?.input ?? 0, 8);
       expect(summary?.outputCost).toBeCloseTo(testCase.expectedBreakdown?.output ?? 0, 8);
