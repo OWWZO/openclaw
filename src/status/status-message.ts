@@ -259,7 +259,7 @@ const formatTranscriptUsage = (snapshot: SessionTranscriptUsageSnapshot) => {
   const cacheWrite = snapshot.cacheWrite;
   const promptTokens = snapshot.totalTokens ?? input + (cacheRead ?? 0) + (cacheWrite ?? 0);
   const total = promptTokens + output;
-  if (promptTokens === 0 && total === 0 && snapshot.usageReport?.state !== "unavailable") {
+  if (promptTokens === 0 && total === 0 && !snapshot.usageReport) {
     return undefined;
   }
   const model = snapshot.modelProvider
@@ -508,13 +508,14 @@ export function buildStatusMessageParts(args: StatusArgs) {
     const logUsage = formatTranscriptUsage(args.transcriptUsage);
     if (logUsage) {
       usageReport ??= logUsage.usageReport;
-      const candidate = logUsage.totalTokensFresh
-        ? logUsage.promptTokens || logUsage.total
-        : undefined;
+      const candidate =
+        logUsage.totalTokensFresh && logUsage.usageReport?.state !== "unavailable"
+          ? logUsage.promptTokens || logUsage.total
+          : undefined;
       if (
         allowTranscriptContextUsage &&
         candidate !== undefined &&
-        candidate > 0 &&
+        candidate >= 0 &&
         (!totalTokens || candidate > totalTokens)
       ) {
         totalTokens = candidate;

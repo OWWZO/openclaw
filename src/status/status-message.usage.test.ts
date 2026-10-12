@@ -26,6 +26,23 @@ it("keeps measured zero counters instead of hydrating historical transcript tota
   expect(text).toContain("Context: 0/");
 });
 
+it("shows measured zero from prepared transcript facts when session counters are missing", () => {
+  const text = buildStatusMessage({
+    agent: { model: "ollama/llama3.2" },
+    modelRefs: statusModelRefs({ provider: "ollama", model: "llama3.2" }),
+    transcriptUsage: {
+      usageReport: { state: "available" },
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      totalTokensFresh: true,
+    },
+    sessionEntry: { sessionId: "transcript-zero", updatedAt: 0 },
+  });
+  expect(text).toContain("Tokens: 0 in / 0 out");
+  expect(text).toContain("Context: 0/");
+});
+
 it.each(["session", "transcript"] as const)(
   "shows interrupted %s usage as unavailable instead of reusing prior counters or price",
   (source) => {
