@@ -42,6 +42,7 @@ async function createRunController(overrides: Partial<RunEmbeddedAgentParams> = 
     ...overrides,
     admittedRunContext,
   };
+  setRuntimeConfigSnapshot(params.config ?? {});
   const controller = createEmbeddedRunLaneController({
     getLifecycleGeneration: () => lifecycleGeneration,
     getParams: () => params,
@@ -85,6 +86,7 @@ async function holdLane(controller: LaneController) {
 beforeEach(() => {
   resetAgentEventsForTest();
   resetCommandQueueStateForTest();
+  setRuntimeConfigSnapshot({});
   vi.useFakeTimers();
   vi.setSystemTime(Date.parse("2026-08-20T12:00:00Z"));
 });
