@@ -737,4 +737,3 @@ export function registerGatewayCli(program: Command) {
       }, "gateway discover failed"),
     );
 }
-/* oxlint-disable max-lines -- TODO: split this grandfathered oversized file. */
